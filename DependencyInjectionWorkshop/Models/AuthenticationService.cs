@@ -1,8 +1,10 @@
 ﻿using System;
+using System.CodeDom;
 using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Net.Http;
+using System.Runtime.InteropServices;
 using System.Text;
 using Dapper;
 using SlackAPI;
@@ -13,6 +15,13 @@ namespace DependencyInjectionWorkshop.Models
     {
         public bool Verify(string accountId, string password, string otp)
         {
+            var httpClient = new HttpClient() { BaseAddress = new Uri("http://joey.com/") };
+            var isLockedFailedCounterResponse = httpClient.PostAsJsonAsync("api/failedCounter/IsLocked", accountId).Result;
+            isLockedFailedCounterResponse.EnsureSuccessStatusCode();
+            var isLocked = isLockedFailedCounterResponse.Content.ReadAsAsync<bool>().Result;
+            if (isLocked)
+                throw new FailedTooManyTimesException();
+
             // Get db password
             var dbPassword = "";
             using (var connection = new SqlConnection("my connection string"))
@@ -32,7 +41,6 @@ namespace DependencyInjectionWorkshop.Models
 
             // Get server OTP
             var serverOTP = "";
-            var httpClient = new HttpClient() { BaseAddress = new Uri("http://joey.com/") };
             var response = httpClient.PostAsJsonAsync("api/otps", accountId).Result;
             if (response.IsSuccessStatusCode)
             {
@@ -60,6 +68,23 @@ namespace DependencyInjectionWorkshop.Models
                 slackClient.PostMessage(response1 => { }, "my channel", "my message", "my bot name");
                 return false;
             }
+        }
+    }
+
+    public class FailedTooManyTimesException : Exception
+    {
+        public FailedTooManyTimesException()
+        {
+            
+        }
+        public FailedTooManyTimesException(string failedTooManyTimes) : base(message:failedTooManyTimes)
+        {
+
+        }
+        public FailedTooManyTimesException(string failedTooManyTimes, Exception innerException) 
+            : base(message: failedTooManyTimes, innerException: innerException)
+        {
+
         }
     }
 }
