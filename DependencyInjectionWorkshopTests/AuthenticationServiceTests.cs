@@ -9,19 +9,6 @@ namespace DependencyInjectionWorkshopTests
     [TestFixture]
     public class AuthenticationServiceTests
     {
-        private const string DefaultAccountId = "joey";
-        private const string DefaultPassword = "pw";
-        private const string DefaultOtp = "123456";
-        private const string DefaultHashedPassword = "my hashed password";
-        private const int DefaultFailedCount = 91;
-        private IProfile _profile;
-        private IHash _hash;
-        private IOtpService _otpService;
-        private IFailedCounter _failedCounter;
-        private INotification _notification;
-        private ILogger _logger;
-        private AuthenticationService _authenticationService;
-
         [SetUp]
         public void SetUp()
         {
@@ -36,23 +23,18 @@ namespace DependencyInjectionWorkshopTests
                 _profile, _hash, _otpService, _failedCounter, _notification, _logger);
         }
 
-        [Test]
-        public void is_valid()
-        {
-            GivenPassword(DefaultAccountId, DefaultHashedPassword);
-            GivenHash(DefaultPassword, DefaultHashedPassword);
-            GivenOtp(DefaultAccountId, DefaultOtp);
-
-            var isValid = WhenVerify(DefaultAccountId, DefaultPassword, DefaultOtp);
-            ShouldBeValid(isValid);
-        }
-
-        [Test]
-        public void is_invalid()
-        {
-            var isValid = WhenInvalid();
-            ShouldBeInvalid(isValid);
-        }
+        private const string DefaultAccountId = "joey";
+        private const string DefaultPassword = "pw";
+        private const string DefaultOtp = "123456";
+        private const string DefaultHashedPassword = "my hashed password";
+        private const int DefaultFailedCount = 91;
+        private IProfile _profile;
+        private IHash _hash;
+        private IOtpService _otpService;
+        private IFailedCounter _failedCounter;
+        private INotification _notification;
+        private ILogger _logger;
+        private AuthenticationService _authenticationService;
 
         private bool WhenInvalid()
         {
@@ -62,21 +44,6 @@ namespace DependencyInjectionWorkshopTests
 
             var isValid = WhenVerify(DefaultAccountId, DefaultPassword, "wrong otp");
             return isValid;
-        }
-
-        [Test]
-        public void Notify_user_when_invalid()
-        {
-            WhenInvalid();
-            ShouldNotifyUser();
-        }
-
-        [Test]
-        public void Log_account_failed_count_when_invalid()
-        {
-            GivenFailedCount(DefaultFailedCount);
-            WhenInvalid();
-            LogShouldContains(DefaultAccountId, DefaultFailedCount);
         }
 
         private void LogShouldContains(string accountId, int failedCount)
@@ -123,6 +90,61 @@ namespace DependencyInjectionWorkshopTests
         private void GivenPassword(string accountId, string hashedPassword)
         {
             _profile.GetPassword(accountId).Returns(hashedPassword);
+        }
+
+        private bool WhenValid()
+        {
+            GivenPassword(DefaultAccountId, DefaultHashedPassword);
+            GivenHash(DefaultPassword, DefaultHashedPassword);
+            GivenOtp(DefaultAccountId, DefaultOtp);
+
+            var isValid = WhenVerify(DefaultAccountId, DefaultPassword, DefaultOtp);
+            return isValid;
+        }
+
+        private void ShouldRestFailedCount()
+        {
+            _failedCounter.ReceivedWithAnyArgs().Reset("");
+        }
+
+        [Test]
+        public void is_valid()
+        {
+            GivenPassword(DefaultAccountId, DefaultHashedPassword);
+            GivenHash(DefaultPassword, DefaultHashedPassword);
+            GivenOtp(DefaultAccountId, DefaultOtp);
+
+            var isValid = WhenVerify(DefaultAccountId, DefaultPassword, DefaultOtp);
+            ShouldBeValid(isValid);
+        }
+
+        [Test]
+        public void is_invalid()
+        {
+            var isValid = WhenInvalid();
+            ShouldBeInvalid(isValid);
+        }
+
+        [Test]
+        public void Notify_user_when_invalid()
+        {
+            WhenInvalid();
+            ShouldNotifyUser();
+        }
+
+        [Test]
+        public void Log_account_failed_count_when_invalid()
+        {
+            GivenFailedCount(DefaultFailedCount);
+            WhenInvalid();
+            LogShouldContains(DefaultAccountId, DefaultFailedCount);
+        }
+
+        [Test]
+        public void reset_failed_count_when_valid()
+        {
+            WhenValid();
+            ShouldRestFailedCount();
         }
     }
 }
