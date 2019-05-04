@@ -54,7 +54,7 @@ namespace DependencyInjectionWorkshop.Models
                 var failedTimes = _failedCounter.Get(accountId);
                 _log.Info($"{accountId} failed {failedTimes} times.");
 
-                _notification.Notify($"{accountId} failed {failedTimes} times.");
+                _notification.PushMessage($"{accountId} failed {failedTimes} times.");
 
                 return false;
             }
