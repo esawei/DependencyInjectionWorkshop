@@ -49,12 +49,30 @@ namespace DependencyInjectionWorkshopTests
         [Test]
         public void is_invalid()
         {
+            var isValid = WhenInvalid();
+            ShouldBeInvalid(isValid);
+        }
+
+        private bool WhenInvalid()
+        {
             GivenPassword(DefaultAccountId, DefaultHashedPassword);
             GivenHash(DefaultPassword, DefaultHashedPassword);
             GivenOtp(DefaultAccountId, DefaultOtp);
 
             var isValid = WhenVerify(DefaultAccountId, DefaultPassword, "wrong otp");
-            ShouldBeInvalid(isValid);
+            return isValid;
+        }
+
+        [Test]
+        public void Notify_user_when_invalid()
+        {
+            WhenInvalid();
+            ShouldNotifyUser();
+        }
+
+        private void ShouldNotifyUser()
+        {
+            _notification.ReceivedWithAnyArgs().PushMessage("");
         }
 
         private static void ShouldBeInvalid(bool isValid)
