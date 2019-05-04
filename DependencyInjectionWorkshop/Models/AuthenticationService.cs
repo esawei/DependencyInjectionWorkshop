@@ -42,36 +42,75 @@ namespace DependencyInjectionWorkshop.Models
         }
     }
 
+    public class FailedCounterDecorator : IAuthenticationService
+    {
+        private IAuthenticationService _authenticationService;
+        private readonly IFailedCounter _failedCounter;
+
+        public FailedCounterDecorator(IAuthenticationService authenticationService, IFailedCounter failedCounter)
+        {
+            _authenticationService = authenticationService;
+            _failedCounter = failedCounter;
+        }
+
+        private void CheckAccountIsLocked(string accountId)
+        {
+            if (_failedCounter.CheckAccountIsLocked(accountId))
+            {
+                throw new FailedTooManyTimesException();
+            }
+        }
+
+        private void ResetFailedCounter(string accountId)
+        {
+            _failedCounter.Reset(accountId);
+        }
+
+        private void AddFailedCounter(string accountId)
+        {
+            _failedCounter.Add(accountId);
+        }
+
+        public bool Verify(string accountId, string password, string otp)
+        {
+            CheckAccountIsLocked(accountId);
+
+            var isValid = _authenticationService.Verify(accountId, password, otp);
+            if (isValid)
+            {
+                ResetFailedCounter(accountId);
+            }
+            else
+            {
+                AddFailedCounter(accountId);
+            }
+
+            return isValid;
+        }
+    }
+
     public class AuthenticationService : IAuthenticationService
     {
         private readonly IProfile _profile;
         private readonly IHash _hash;
         private readonly IOtpService _otpService;
-        private readonly IFailedCounter _failedCounter;
 
         public AuthenticationService()
         {
             _profile = new ProfileRepo();
             _hash = new Sha256Adapter();
             _otpService = new OtpService();
-            _failedCounter = new FailedCounter();
         }
 
-        public AuthenticationService(IProfile profile, IHash hash, IOtpService otpService, IFailedCounter failedCounter)
+        public AuthenticationService(IProfile profile, IHash hash, IOtpService otpService)
         {
             _profile = profile;
             _hash = hash;
             _otpService = otpService;
-            _failedCounter = failedCounter;
         }
 
         public bool Verify(string accountId, string password, string otp)
         {
-            if (_failedCounter.CheckAccountIsLocked(accountId))
-            {
-                throw new FailedTooManyTimesException();
-            }
-
             var passwordFromDb = _profile.GetPassword(accountId);
 
             var hashedPassword = _hash.GetHash(password);
@@ -80,13 +119,10 @@ namespace DependencyInjectionWorkshop.Models
 
             if (hashedPassword == passwordFromDb && otp == currentOtp)
             {
-                _failedCounter.Reset(accountId);
                 return true;
             }
             else
             {
-                _failedCounter.Add(accountId);
-
                 return false;
             }
         }
