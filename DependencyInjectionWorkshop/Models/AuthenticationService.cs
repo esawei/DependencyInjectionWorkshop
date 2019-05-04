@@ -8,49 +8,58 @@ namespace DependencyInjectionWorkshop.Models
 {
     public class AuthenticationService
     {
-        private readonly ProfileRepo _profileRepo = new ProfileRepo();
-        private readonly Sha256Adapter _sha256Adapter = new Sha256Adapter();
-        private readonly OtpService _otpService = new OtpService();
-        private readonly FailedCounter _failedCounter = new FailedCounter();
-        private readonly SlackAdapter _slackAdapter = new SlackAdapter();
-        private readonly NLogAdapter _nLogAdapter = new NLogAdapter();
+        private readonly IProfile _profile;
+        private readonly IHash _hash;
+        private readonly IOtpService _otpService;
+        private readonly IFailedCounter _failedCounter;
+        private readonly INotification _notification;
+        private readonly ILogger _logger;
+
+        public AuthenticationService()
+        {
+            _profile = new ProfileRepo();
+            _hash = new Sha256Adapter();
+            _otpService = new OtpService();
+            _failedCounter = new FailedCounter();
+            _notification = new SlackAdapter();
+            _logger = new NLogAdapter();
+        }
+
+        public AuthenticationService(IProfile profile, IHash hash, IOtpService otpService, IFailedCounter failedCounter, INotification notification, ILogger logger)
+        {
+            _profile = profile;
+            _hash = hash;
+            _otpService = otpService;
+            _failedCounter = failedCounter;
+            _notification = notification;
+            _logger = logger;
+        }
 
         public bool Verify(string accountId, string password, string otp)
         {
-            CheckAccountIsLocked(accountId);
+            _failedCounter.IsLocked(accountId);
 
-            var passwordFromDb = _profileRepo.GetPasswordFromDb(accountId);
+            var passwordFromDb = _profile.GetPassword(accountId);
 
-            var hashedPassword = _sha256Adapter.HashedPassword(password);
+            var hashedPassword = _hash.GetHash(password);
 
             var currentOtp = _otpService.GetCurrentOtp(accountId);
 
             if (hashedPassword == passwordFromDb && otp == currentOtp)
             {
-                _failedCounter.ResetFailedCounter(accountId);
+                _failedCounter.Reset(accountId);
                 return true;
             }
             else
             {
-                _failedCounter.AddFailedCounter(accountId);
+                _failedCounter.Add(accountId);
 
-                _slackAdapter.NofifyUser(accountId);
+                _notification.PushMessage(accountId);
 
-                var failedTimes = _failedCounter.GetFailedTimes(accountId);
-                _nLogAdapter.LogFiledCount(accountId, failedTimes);
+                var failedTimes = _failedCounter.Get(accountId);
+                _logger.Info($"AccountId: {accountId}, Failed Times: {failedTimes}");
 
                 return false;
-            }
-        }
-
-        private void CheckAccountIsLocked(string accountId)
-        {
-            var isLockedResponse = new HttpClient() { BaseAddress = new Uri("http://joey.com/") }.PostAsJsonAsync("api/failedCounter/IsLocked", accountId).Result;
-            isLockedResponse.EnsureSuccessStatusCode();
-            var isLocked = isLockedResponse.Content.ReadAsAsync<bool>().Result;
-            if (isLocked)
-            {
-                throw new FailedTooManyTimesException();
             }
         }
     }

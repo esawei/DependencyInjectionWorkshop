@@ -1,11 +1,16 @@
 ﻿namespace DependencyInjectionWorkshop.Adapters
 {
-    public class NLogAdapter
+    public interface ILogger
     {
-        public void LogFiledCount(string accountId, int failedTimes)
+        void Info(string message);
+    }
+
+    public class NLogAdapter : ILogger
+    {
+        public void Info(string message)
         {
             var logger = NLog.LogManager.GetCurrentClassLogger();
-            logger.Info($"AccountId: {accountId}, Failed Times: {failedTimes}");
+            logger.Info(message);
         }
     }
 }
