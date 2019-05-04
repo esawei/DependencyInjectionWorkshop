@@ -47,13 +47,13 @@ namespace DependencyInjectionWorkshopTests
             _failedCounter.Get(DefaultAccountId).ReturnsForAnyArgs(failedCount);
         }
 
-        private void WhenInvalid()
+        private bool WhenInvalid()
         {
             GivenPassword(DefaultAccountId, DefaultHashedPassword);
             GivenOtp(DefaultAccountId, DefaultOtp);
             GivenHash(DefaultPassword, DefaultHashedPassword);
 
-            WhenVerify(DefaultAccountId, DefaultPassword, "wrong otp");
+            return WhenVerify(DefaultAccountId, DefaultPassword, "wrong otp");
         }
 
         private void ShouldNotifyUser()
@@ -91,16 +91,18 @@ namespace DependencyInjectionWorkshopTests
             _profile.GetPassword(accountId).ReturnsForAnyArgs(hashedPassword);
         }
 
-        [Test]
-        public void Is_valid()
+        public bool WhenValid()
         {
             GivenPassword(DefaultAccountId, DefaultHashedPassword);
             GivenHash(DefaultPassword, DefaultHashedPassword);
             GivenOtp(DefaultAccountId, DefaultOtp);
 
-            var isValid = WhenVerify(DefaultAccountId, DefaultPassword, DefaultOtp);
+            return WhenVerify(DefaultAccountId, DefaultPassword, DefaultOtp);
+        }
 
-            ShouldBeValid(isValid);
+        private void ShouldResetFailedCounter()
+        {
+            _failedCounter.Received(1).Reset(Arg.Any<string>());
         }
 
         [Test]
@@ -116,10 +118,15 @@ namespace DependencyInjectionWorkshopTests
         }
 
         [Test]
-        public void Notify_user_when_invalid()
+        public void Is_valid()
         {
-            WhenInvalid();
-            ShouldNotifyUser();
+            GivenPassword(DefaultAccountId, DefaultHashedPassword);
+            GivenHash(DefaultPassword, DefaultHashedPassword);
+            GivenOtp(DefaultAccountId, DefaultOtp);
+
+            var isValid = WhenVerify(DefaultAccountId, DefaultPassword, DefaultOtp);
+
+            ShouldBeValid(isValid);
         }
 
         [Test]
@@ -128,6 +135,20 @@ namespace DependencyInjectionWorkshopTests
             GivenFailedCount(DefaultFailedCount);
             WhenInvalid();
             LogShouldContains(DefaultAccountId, DefaultFailedCount);
+        }
+
+        [Test]
+        public void Notify_user_when_invalid()
+        {
+            WhenInvalid();
+            ShouldNotifyUser();
+        }
+
+        [Test]
+        public void Reset_failed_count_when_valid()
+        {
+            WhenValid();
+            ShouldResetFailedCounter();
         }
     }
 }
