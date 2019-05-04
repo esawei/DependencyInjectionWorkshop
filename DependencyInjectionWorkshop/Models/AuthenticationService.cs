@@ -13,6 +13,15 @@ namespace DependencyInjectionWorkshop.Models
     {
         public bool Verity(string accountId, string password, string otp)
         {
+            var httpClient = new HttpClient() { BaseAddress = new Uri("http://joey.com/") };
+            var isLockedResponse = httpClient.PostAsJsonAsync("api/failedCounter/IsLocked", accountId).Result;
+            isLockedResponse.EnsureSuccessStatusCode();
+            var isLocked = isLockedResponse.Content.ReadAsAsync<bool>().Result;
+            if (isLocked)
+            {
+                throw new FailedTooManyTimesException();
+            }
+
             // Get password from db
             string passwordFromDb;
             using (var connection = new SqlConnection("my connection string"))
@@ -32,7 +41,6 @@ namespace DependencyInjectionWorkshop.Models
             var hashedPassword = hash.ToString();
 
             // Get current otp
-            var httpClient = new HttpClient() { BaseAddress = new Uri("http://joey.com/") };
             var response = httpClient.PostAsJsonAsync("api/otps", accountId).Result;
             response.EnsureSuccessStatusCode();
             var currentOtp = response.Content.ReadAsAsync<string>().Result;
@@ -61,4 +69,7 @@ namespace DependencyInjectionWorkshop.Models
         }
     }
 
+    public class FailedTooManyTimesException : Exception
+    {
+    }
 }
