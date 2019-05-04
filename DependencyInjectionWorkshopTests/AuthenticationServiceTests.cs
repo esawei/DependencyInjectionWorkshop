@@ -146,5 +146,17 @@ namespace DependencyInjectionWorkshopTests
             WhenValid();
             ShouldRestFailedCount();
         }
+
+        [Test]
+        public void add_failed_count_when_invalid()
+        {
+            WhenInvalid();
+            ShouldAddFailedCount();
+        }
+
+        private void ShouldAddFailedCount()
+        {
+            _failedCounter.ReceivedWithAnyArgs().Add("");
+        }
     }
 }
