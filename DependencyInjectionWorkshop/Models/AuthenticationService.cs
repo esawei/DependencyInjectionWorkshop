@@ -40,16 +40,26 @@ namespace DependencyInjectionWorkshop.Models
             }
             else
             {
-                throw new Exception($"web api error, accountId:{accountId}");
+                throw new Exception($"web api otps error, accountId:{accountId}");
             }
 
             // Verify passwrod and OTP
             if (dbPassword == hashedInputPassword.ToString() && otp == serverOTP)
-                return true;
+            {
+                var resetFailedCounterResponse = httpClient.PostAsJsonAsync("api/failedCounter/Reset", accountId).Result;
+                resetFailedCounterResponse.EnsureSuccessStatusCode();
 
-            var slackClient = new SlackClient("my api token");
-            slackClient.PostMessage(response1 => { }, "my channel", "my message", "my bot name");
-            return false;
+                return true;
+            }
+            else
+            {
+                var addFailedCounterResponse = httpClient.PostAsJsonAsync("api/failedCounter/Add", accountId).Result;
+                addFailedCounterResponse.EnsureSuccessStatusCode();
+
+                var slackClient = new SlackClient("my api token");
+                slackClient.PostMessage(response1 => { }, "my channel", "my message", "my bot name");
+                return false;
+            }
         }
     }
 }
