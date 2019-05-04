@@ -15,7 +15,7 @@ namespace DependencyInjectionWorkshop.Models
         private readonly SlackAdapter _slackAdapter = new SlackAdapter();
         private readonly NLogAdapter _nLogAdapter = new NLogAdapter();
 
-        public bool Verity(string accountId, string password, string otp)
+        public bool Verify(string accountId, string password, string otp)
         {
             CheckAccountIsLocked(accountId);
 
