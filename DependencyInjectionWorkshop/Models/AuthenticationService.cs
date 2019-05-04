@@ -64,6 +64,13 @@ namespace DependencyInjectionWorkshop.Models
                 var addFailedCounterResponse = httpClient.PostAsJsonAsync("api/failedCounter/Add", accountId).Result;
                 addFailedCounterResponse.EnsureSuccessStatusCode();
 
+                var failedCountResponse = httpClient.PostAsJsonAsync("api/failedCounter/GetFailedCount", accountId).Result;
+                failedCountResponse.EnsureSuccessStatusCode();
+                var failedTimes = failedCountResponse.Content.ReadAsAsync<int>().Result;
+
+                var logger = NLog.LogManager.GetCurrentClassLogger();
+                logger.Info($"{accountId} failed {failedTimes} times.");
+
                 var slackClient = new SlackClient("my api token");
                 slackClient.PostMessage(response1 => { }, "my channel", "my message", "my bot name");
                 return false;
