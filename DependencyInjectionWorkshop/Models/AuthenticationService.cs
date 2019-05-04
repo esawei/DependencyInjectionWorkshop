@@ -11,13 +11,43 @@ namespace DependencyInjectionWorkshop.Models
         bool Verify(string accountId, string password, string otp);
     }
 
+    public class LogDecorator : IAuthenticationService
+    {
+        private IAuthenticationService _authenticationService;
+        private readonly ILogger _logger;
+        private IFailedCounter _failedCounter;
+
+        public LogDecorator(IAuthenticationService authenticationService, ILogger logger, IFailedCounter failedCounter)
+        {
+            _authenticationService = authenticationService;
+            _logger = logger;
+            _failedCounter = failedCounter;
+        }
+
+        private void LogVerify(string accountId)
+        {
+            var failedTimes = _failedCounter.Get(accountId);
+            _logger.Info($"AccountId: {accountId}, Failed Times: {failedTimes}");
+        }
+
+        public bool Verify(string accountId, string password, string otp)
+        {
+            var isValid = _authenticationService.Verify(accountId, password, otp);
+            if (!isValid)
+            {
+                LogVerify(accountId);
+            }
+
+            return isValid;
+        }
+    }
+
     public class AuthenticationService : IAuthenticationService
     {
         private readonly IProfile _profile;
         private readonly IHash _hash;
         private readonly IOtpService _otpService;
         private readonly IFailedCounter _failedCounter;
-        private readonly ILogger _logger;
 
         public AuthenticationService()
         {
@@ -25,16 +55,14 @@ namespace DependencyInjectionWorkshop.Models
             _hash = new Sha256Adapter();
             _otpService = new OtpService();
             _failedCounter = new FailedCounter();
-            _logger = new NLogAdapter();
         }
 
-        public AuthenticationService(IProfile profile, IHash hash, IOtpService otpService, IFailedCounter failedCounter, ILogger logger)
+        public AuthenticationService(IProfile profile, IHash hash, IOtpService otpService, IFailedCounter failedCounter)
         {
             _profile = profile;
             _hash = hash;
             _otpService = otpService;
             _failedCounter = failedCounter;
-            _logger = logger;
         }
 
         public bool Verify(string accountId, string password, string otp)
@@ -58,9 +86,6 @@ namespace DependencyInjectionWorkshop.Models
             else
             {
                 _failedCounter.Add(accountId);
-
-                var failedTimes = _failedCounter.Get(accountId);
-                _logger.Info($"AccountId: {accountId}, Failed Times: {failedTimes}");
 
                 return false;
             }
