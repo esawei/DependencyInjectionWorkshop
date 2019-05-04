@@ -1,6 +1,7 @@
 ﻿using System.CodeDom;
 using System.Runtime.InteropServices;
 using DependencyInjectionWorkshop.Adapters;
+using DependencyInjectionWorkshop.Exceptions;
 using DependencyInjectionWorkshop.Repositories;
 
 namespace DependencyInjectionWorkshop.Models
@@ -36,7 +37,10 @@ namespace DependencyInjectionWorkshop.Models
 
         public bool Verify(string accountId, string password, string otp)
         {
-            _failedCounter.CheckAccountIsLocked(accountId);
+            if (_failedCounter.CheckAccountIsLocked(accountId))
+            {
+                throw new FailedTooManyTimesException();
+            }
 
             var passwordFromDb = _profile.GetPassword(accountId);
             var hashedPassword = _hash.GetHash(password);
