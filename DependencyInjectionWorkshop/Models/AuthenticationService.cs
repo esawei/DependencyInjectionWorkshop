@@ -37,7 +37,10 @@ namespace DependencyInjectionWorkshop.Models
 
         public bool Verify(string accountId, string password, string otp)
         {
-            _failedCounter.IsLocked(accountId);
+            if (_failedCounter.CheckAccountIsLocked(accountId))
+            {
+                throw new FailedTooManyTimesException();
+            }
 
             var passwordFromDb = _profile.GetPassword(accountId);
 
