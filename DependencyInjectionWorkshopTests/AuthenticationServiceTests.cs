@@ -20,8 +20,12 @@ namespace DependencyInjectionWorkshopTests
             _notification = Substitute.For<INotification>();
             _logger = Substitute.For<ILogger>();
 
-            _authenticationService = new AuthenticationService(
-                _profile, _hash, _otpService, _failedCounter, _notification, _logger);
+
+            IAuthenticationService authentication = new AuthenticationService(
+                _profile, _hash, _otpService, _failedCounter, _logger);
+            authentication = new NotificationDecorator(authentication, _notification);
+
+            _authenticationService = authentication;
         }
 
         private const string DefaultAccountId = "joey";
@@ -35,7 +39,7 @@ namespace DependencyInjectionWorkshopTests
         private IFailedCounter _failedCounter;
         private INotification _notification;
         private ILogger _logger;
-        private AuthenticationService _authenticationService;
+        private IAuthenticationService _authenticationService;
 
         private bool WhenInvalid()
         {
