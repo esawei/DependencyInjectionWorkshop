@@ -64,6 +64,14 @@ namespace DependencyInjectionWorkshop.Models
                 slackClient.PostMessage(response1 => { }, "my channel", 
                     $"{accountId} login invalid.", "my bot name");
 
+                // Log account and failed count when invalid
+                var getFailedCountResponse = httpClient.PostAsJsonAsync("api/failedCounter/get", accountId).Result;
+                getFailedCountResponse.EnsureSuccessStatusCode();
+                var failedTimes = getFailedCountResponse.Content.ReadAsAsync<int>();
+
+                var logger = NLog.LogManager.GetCurrentClassLogger();
+                logger.Info($"AccountId: {accountId}, Failed Times: {failedTimes}");
+
                 return false;
             }
         }
