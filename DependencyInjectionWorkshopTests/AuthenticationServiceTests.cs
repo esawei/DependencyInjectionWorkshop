@@ -23,9 +23,9 @@ namespace DependencyInjectionWorkshopTests
 
             IAuthenticationService authentication = new AuthenticationService(
                 _profile, _hash, _otpService);
-            authentication = new FailedCounterDecorator(authentication, _failedCounter);
             authentication = new NotificationDecorator(authentication, _notification);
             authentication = new LogDecorator(authentication, _logger, _failedCounter);
+            authentication = new FailedCounterDecorator(authentication, _failedCounter);
 
             _authenticationService = authentication;
         }

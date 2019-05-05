@@ -11,81 +11,18 @@ namespace DependencyInjectionWorkshop.Models
         bool Verify(string accountId, string password, string otp);
     }
 
-    public class LogDecorator : IAuthenticationService
+    public class AuthenticationDecoratorBase : IAuthenticationService
     {
-        private IAuthenticationService _authenticationService;
-        private readonly ILogger _logger;
-        private IFailedCounter _failedCounter;
+        private readonly IAuthenticationService _authenticationService;
 
-        public LogDecorator(IAuthenticationService authenticationService, ILogger logger, IFailedCounter failedCounter)
+        protected AuthenticationDecoratorBase(IAuthenticationService authenticationService)
         {
             _authenticationService = authenticationService;
-            _logger = logger;
-            _failedCounter = failedCounter;
         }
 
-        private void LogVerify(string accountId)
+        public virtual bool Verify(string accountId, string password, string otp)
         {
-            var failedTimes = _failedCounter.Get(accountId);
-            _logger.Info($"AccountId: {accountId}, Failed Times: {failedTimes}");
-        }
-
-        public bool Verify(string accountId, string password, string otp)
-        {
-            var isValid = _authenticationService.Verify(accountId, password, otp);
-            if (!isValid)
-            {
-                LogVerify(accountId);
-            }
-
-            return isValid;
-        }
-    }
-
-    public class FailedCounterDecorator : IAuthenticationService
-    {
-        private IAuthenticationService _authenticationService;
-        private readonly IFailedCounter _failedCounter;
-
-        public FailedCounterDecorator(IAuthenticationService authenticationService, IFailedCounter failedCounter)
-        {
-            _authenticationService = authenticationService;
-            _failedCounter = failedCounter;
-        }
-
-        private void CheckAccountIsLocked(string accountId)
-        {
-            if (_failedCounter.CheckAccountIsLocked(accountId))
-            {
-                throw new FailedTooManyTimesException();
-            }
-        }
-
-        private void ResetFailedCounter(string accountId)
-        {
-            _failedCounter.Reset(accountId);
-        }
-
-        private void AddFailedCounter(string accountId)
-        {
-            _failedCounter.Add(accountId);
-        }
-
-        public bool Verify(string accountId, string password, string otp)
-        {
-            CheckAccountIsLocked(accountId);
-
-            var isValid = _authenticationService.Verify(accountId, password, otp);
-            if (isValid)
-            {
-                ResetFailedCounter(accountId);
-            }
-            else
-            {
-                AddFailedCounter(accountId);
-            }
-
-            return isValid;
+            return _authenticationService.Verify(accountId, password, otp);
         }
     }
 
