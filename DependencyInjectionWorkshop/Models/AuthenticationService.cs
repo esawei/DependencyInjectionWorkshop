@@ -4,27 +4,27 @@ using DependencyInjectionWorkshop.Repositories;
 
 namespace DependencyInjectionWorkshop.Models
 {
-    public interface IAuthenticationService
+    public interface IAuthentication
     {
         bool Verify(string accountId, string password, string otp);
     }
 
-    public class AuthenticationDecoratorBase : IAuthenticationService
+    public class AuthenticationDecoratorBase : IAuthentication
     {
-        private readonly IAuthenticationService _authenticationService;
+        private readonly IAuthentication _authentication;
 
-        protected AuthenticationDecoratorBase(IAuthenticationService authenticationService)
+        protected AuthenticationDecoratorBase(IAuthentication authentication)
         {
-            _authenticationService = authenticationService;
+            _authentication = authentication;
         }
 
         public virtual bool Verify(string accountId, string password, string otp)
         {
-            return _authenticationService.Verify(accountId, password, otp);
+            return _authentication.Verify(accountId, password, otp);
         }
     }
 
-    public class AuthenticationService : IAuthenticationService
+    public class AuthenticationService : IAuthentication
     {
         private readonly IProfile _profile;
         private readonly IHash _hash;

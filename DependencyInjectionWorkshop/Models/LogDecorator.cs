@@ -7,7 +7,7 @@ namespace DependencyInjectionWorkshop.Models
         private readonly ILogger _logger;
         private readonly IFailedCounter _failedCounter;
 
-        public LogDecorator(IAuthenticationService authenticationService, ILogger logger, IFailedCounter failedCounter) : base(authenticationService)
+        public LogDecorator(IAuthentication authentication, ILogger logger, IFailedCounter failedCounter) : base(authentication)
         {
             _logger = logger;
             _failedCounter = failedCounter;

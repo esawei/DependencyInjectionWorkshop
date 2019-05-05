@@ -21,13 +21,13 @@ namespace DependencyInjectionWorkshopTests
             _logger = Substitute.For<ILogger>();
 
 
-            IAuthenticationService authentication = new AuthenticationService(
+            IAuthentication authentication = new AuthenticationService(
                 _profile, _hash, _otpService);
             authentication = new NotificationDecorator(authentication, _notification);
             authentication = new LogDecorator(authentication, _logger, _failedCounter);
             authentication = new FailedCounterDecorator(authentication, _failedCounter);
 
-            _authenticationService = authentication;
+            _authentication = authentication;
         }
 
         private const string DefaultAccountId = "joey";
@@ -41,7 +41,7 @@ namespace DependencyInjectionWorkshopTests
         private IFailedCounter _failedCounter;
         private INotification _notification;
         private ILogger _logger;
-        private IAuthenticationService _authenticationService;
+        private IAuthentication _authentication;
 
         private bool WhenInvalid()
         {
@@ -81,7 +81,7 @@ namespace DependencyInjectionWorkshopTests
 
         private bool WhenVerify(string accountId, string password, string otp)
         {
-            return _authenticationService.Verify(accountId, password, otp);
+            return _authentication.Verify(accountId, password, otp);
         }
 
         private void GivenOtp(string accountId, string otp)
@@ -171,7 +171,7 @@ namespace DependencyInjectionWorkshopTests
         {
             _failedCounter.CheckAccountIsLocked(DefaultAccountId).ReturnsForAnyArgs(true);
 
-            TestDelegate action = () => _authenticationService.Verify(DefaultAccountId, DefaultPassword, DefaultOtp);
+            TestDelegate action = () => _authentication.Verify(DefaultAccountId, DefaultPassword, DefaultOtp);
 
             Assert.Throws<FailedTooManyTimesException>(action);
         }
